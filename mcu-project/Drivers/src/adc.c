@@ -1,7 +1,8 @@
 #include "adc.h"
 #include "board.h"
 
-// Khoi tao ADC doc 1 kenh (mic), chuyen doi don, kich bang phan mem
+// Khoi tao ADC doc 1 kenh (mic): moi lan TIM3 tran (TRGO) chuyen doi 1 mau
+// Goi truoc timer_init() de ADC san sang truoc khi co trigger dau tien
 void adc_init(void)
 {
     // Bat clock GPIOA (bit 2: IOPAEN) va ADC1 (bit 9: ADC1EN)
@@ -24,9 +25,10 @@ void adc_init(void)
     BOARD_ADC->SQR1 &= ~(0xF << 20);
     BOARD_ADC->SQR3 = BOARD_MIC_ADC_CH;
 
-    // Kich bang SWSTART: EXTSEL = 111 (bit 19:17), bat EXTTRIG (bit 20)
+    // Kich bang TIM3 TRGO: EXTSEL = 100 (bit 19:17), bat EXTTRIG (bit 20)
+    // Chuyen doi don: CONT = 0 (bit 1), moi trigger chi 1 mau
     // Bat nguon ADC (bit 0: ADON), lan ghi dau chi danh thuc ADC
-    BOARD_ADC->CR2 = (7 << 17) | (1 << 20) | (1 << 0);
+    BOARD_ADC->CR2 = (4 << 17) | (1 << 20) | (1 << 0);
 
     // Cho ADC on dinh (tSTAB = 1 us) truoc khi hieu chuan, khong can chinh xac
     for (volatile uint32_t i = 0; i < 1000; i++)
@@ -46,12 +48,9 @@ void adc_init(void)
     }
 }
 
-// Doc 1 mau 12 bit (0..4095): kich chuyen doi roi cho xong (ham chan)
+// Doc 1 mau 12 bit (0..4095): cho mau do timer kich chuyen doi xong (ham chan)
 uint16_t adc_read(void)
 {
-    // Bat dau chuyen doi (bit 22: SWSTART)
-    BOARD_ADC->CR2 |= (1 << 22);
-
     while ((BOARD_ADC->SR & (1 << 1)) == 0)
     {
         // Cho EOC = 1 (bit 1 cua SR)
