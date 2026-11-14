@@ -17,4 +17,9 @@
 #define BOARD_MIC_PIN       0
 #define BOARD_MIC_ADC_CH    0
 
+// Timer tao nhip: TIM3 (sau nay kich duoc ADC1 qua TIM3 TRGO)
+#define BOARD_TIM           TIM3
+// Clock cap cho TIM3: APB1 = 36 MHz, timer duoc nhan 2 vi APB1 chia 2 -> 72 MHz
+#define BOARD_TIM_CLK_HZ    72000000
+
 #endif /* BOARD_H */

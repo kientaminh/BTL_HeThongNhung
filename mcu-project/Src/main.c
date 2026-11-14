@@ -1,40 +1,19 @@
 #include <stdint.h>
 #include "adc.h"
+#include "timer.h"
 #include "uart.h"
 
-// Gui so thap phan khong dau kem xuong dong
-static void send_number(uint16_t value)
-{
-    uint8_t digits[5]; // uint16_t toi da 5 chu so
-    uint32_t n = 0;
-
-    do
-    {
-        digits[n++] = (uint8_t)('0' + (value % 10));
-        value /= 10;
-    } while (value != 0);
-
-    while (n > 0)
-    {
-        uart_send_byte(digits[--n]);
-    }
-
-    uart_send_buffer((const uint8_t *)"\r\n", 2);
-}
-
-// Chuong trinh thu ADC: in gia tri mic (0..4095) qua UART
+// Chuong trinh thu mic: TIM3 kich ADC 8 kHz, gui moi mau 1 byte qua UART
+// May tinh thu bang Tools/uart_to_wav.py (SAMPLE_RATE phai khop tan so o day)
 int main(void)
 {
     uart_init(115200);
     adc_init();
+    timer_init(8000);
 
     for (;;)
     {
-        send_number(adc_read());
-
-        // Tre tho giua hai lan in, khong can chinh xac
-        for (volatile uint32_t i = 0; i < 500000; i++)
-        {
-        }
+        // Giu 8 bit cao cua mau 12 bit: 8000 byte/s vua voi 115200 baud (11520 byte/s)
+        uart_send_byte((uint8_t)(adc_read() >> 4));
     }
 }
