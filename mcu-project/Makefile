@@ -10,7 +10,7 @@ LINKER    := Linker/stm32f103c8.ld
 
 CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
 FREERTOS_DIR := Lib/FreeRTOS-Kernel
-C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/src/uart.c
+C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/src/uart.c Drivers/src/adc.c
 FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
                     $(FREERTOS_DIR)/queue.c \
                     $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \

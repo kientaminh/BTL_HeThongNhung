@@ -11,4 +11,10 @@
 // Clock cap cho USART1: APB2 = SYSCLK = 72 MHz 
 #define BOARD_USART_PCLK_HZ 72000000
 
+// Mic MAX9814: chan OUT noi vao PA0 = ADC1 kenh 0 (ADC12_IN0)
+#define BOARD_ADC           ADC1
+#define BOARD_MIC_PORT      GPIOA
+#define BOARD_MIC_PIN       0
+#define BOARD_MIC_ADC_CH    0
+
 #endif /* BOARD_H */
