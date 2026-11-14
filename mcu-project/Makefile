@@ -6,24 +6,25 @@ SIZE    := arm-none-eabi-size
 
 BUILD_DIR := Build
 BIN_DIR   := Bin
-LINKER    := Linker/STM32F103C8.ld
+LINKER    := Linker/stm32f103c8.ld
 
 CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
 FREERTOS_DIR := Lib/FreeRTOS-Kernel
-C_SOURCES := Src/main.c Src/system_stm32f1xx.c Src/led_button.c
+C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/src/uart.c
 FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
                     $(FREERTOS_DIR)/queue.c \
                     $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
                     $(FREERTOS_DIR)/portable/MemMang/heap_4.c
-vpath %.c $(sort $(dir $(FREERTOS_SOURCES)))
+vpath %.c $(sort $(dir $(C_SOURCES) $(FREERTOS_SOURCES)))
 ASM_SOURCE := $(CMSIS_DIR)/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xb.s
-OBJECTS   := $(patsubst Src/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES)) \
-             $(addprefix $(BUILD_DIR)/,$(notdir $(FREERTOS_SOURCES:.c=.o))) \
+# FreeRTOS tam chua dua vao build: chua co FreeRTOSConfig.h.
+# Them lai: $(addprefix $(BUILD_DIR)/,$(notdir $(FREERTOS_SOURCES:.c=.o)))
+OBJECTS   := $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o))) \
              $(BUILD_DIR)/startup_stm32f103xb.o
 DEPS      := $(OBJECTS:.o=.d)
 
 CPUFLAGS := -mcpu=cortex-m3 -mthumb
-INCLUDES  := -ISrc -I$(CMSIS_DIR)/Include \
+INCLUDES  := -ISrc -IBsp -IDrivers/inc -I$(CMSIS_DIR)/Include \
              -I$(CMSIS_DIR)/Device/ST/STM32F1xx/Include \
              -I$(FREERTOS_DIR)/include \
              -I$(FREERTOS_DIR)/portable/GCC/ARM_CM3

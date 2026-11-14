@@ -1,21 +1,21 @@
 #include "stm32f1xx.h" 
 
 #ifndef HSE_VALUE 
-#define HSE_VALUE 8000000U 
+#define HSE_VALUE 8000000 
 #endif 
 
 #ifndef HSI_VALUE 
-#define HSI_VALUE 8000000U 
+#define HSI_VALUE 8000000 
 #endif 
 
-#define SYSCLK_HZ 72000000U 
+#define SYSCLK_HZ 72000000 
 
 uint32_t SystemCoreClock = SYSCLK_HZ; 
 
-const uint8_t AHBPrescTable[16U] = { 
-    0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U, 6U, 7U, 8U, 9U
+const uint8_t AHBPrescTable[16] = { 
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9
 };
-const uint8_t APBPrescTable[8U] = {0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U}; 
+const uint8_t APBPrescTable[8] = {0, 0, 0, 0, 1, 2, 3, 4}; 
 
 void SystemInit(void) 
 {
@@ -24,7 +24,7 @@ void SystemInit(void)
 
     /* Bat HSE va cho dao dong on dinh. */
     RCC->CR |= RCC_CR_HSEON; 
-    while ((RCC->CR & RCC_CR_HSERDY) == 0U) { 
+    while ((RCC->CR & RCC_CR_HSERDY) == 0) { 
     }
 
     RCC->CFGR &= ~(RCC_CFGR_SW | RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | 
@@ -37,7 +37,7 @@ void SystemInit(void)
 
     /* Bat PLL va cho clock on dinh. */
     RCC->CR |= RCC_CR_PLLON; 
-    while ((RCC->CR & RCC_CR_PLLRDY) == 0U) { 
+    while ((RCC->CR & RCC_CR_PLLRDY) == 0) { 
     }
 
     /* Chuyen clock he thong sang PLL. */
@@ -60,17 +60,17 @@ void SystemCoreClockUpdate(void)
 
     case RCC_CFGR_SWS_PLL: { 
         uint32_t pll_multiplier =
-            ((RCC->CFGR & RCC_CFGR_PLLMULL) >> RCC_CFGR_PLLMULL_Pos) + 2U;
+            ((RCC->CFGR & RCC_CFGR_PLLMULL) >> RCC_CFGR_PLLMULL_Pos) + 2;
 
-        if ((RCC->CFGR & RCC_CFGR_PLLSRC) != 0U) { 
+        if ((RCC->CFGR & RCC_CFGR_PLLSRC) != 0) { 
             uint32_t pll_input = HSE_VALUE; 
 
-            if ((RCC->CFGR & RCC_CFGR_PLLXTPRE) != 0U) { 
-                pll_input /= 2U;
+            if ((RCC->CFGR & RCC_CFGR_PLLXTPRE) != 0) { 
+                pll_input /= 2;
             }
             system_clock = pll_input * pll_multiplier;
         } else { 
-            system_clock = (HSI_VALUE / 2U) * pll_multiplier;
+            system_clock = (HSI_VALUE / 2) * pll_multiplier;
         }
         break; 
     }
