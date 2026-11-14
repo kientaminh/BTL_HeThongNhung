@@ -66,7 +66,7 @@ $(BUILD_DIR) $(BIN_DIR):
 
 # Nap bang OpenOCD va ST-Link.
 flash: $(ELF)
-	openocd -f interface/stlink.cfg -f target/stm32f1x.cfg \
+	openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg \
 		-c "program $(ELF) verify reset exit"
 
 # Cach khac khi da cai stlink-tools.
