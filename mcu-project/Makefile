@@ -10,7 +10,9 @@ LINKER    := Linker/stm32f103c8.ld
 
 CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
 FREERTOS_DIR := Lib/FreeRTOS-Kernel
-C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/src/uart.c Drivers/src/adc.c Drivers/src/timer.c
+FATFS_DIR := Lib/STM32CubeF1/Middlewares/Third_Party/FatFs/src
+C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/src/uart.c Drivers/src/adc.c Drivers/src/timer.c \
+             Drivers/src/sd_card.c Drivers/src/diskio.c $(FATFS_DIR)/ff.c
 FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
                     $(FREERTOS_DIR)/queue.c \
                     $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
@@ -24,7 +26,7 @@ OBJECTS   := $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o))) \
 DEPS      := $(OBJECTS:.o=.d)
 
 CPUFLAGS := -mcpu=cortex-m3 -mthumb
-INCLUDES  := -ISrc -IBsp -IDrivers/inc -I$(CMSIS_DIR)/Include \
+INCLUDES  := -ISrc -IBsp -IDrivers/inc -I$(FATFS_DIR) -I$(CMSIS_DIR)/Include \
              -I$(CMSIS_DIR)/Device/ST/STM32F1xx/Include \
              -I$(FREERTOS_DIR)/include \
              -I$(FREERTOS_DIR)/portable/GCC/ARM_CM3
