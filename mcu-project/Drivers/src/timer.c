@@ -1,7 +1,9 @@
 #include "timer.h"
 #include "board.h"
 
-// Khoi tao timer tao nhip deu freq_hz lan moi giay (freq_hz khac 0, toi da BOARD_TIM_CLK_HZ)
+// Cau hinh timer tao nhip deu freq_hz lan moi giay (freq_hz khac 0, toi da BOARD_TIM_CLK_HZ)
+// Chua dem: goi timer_start() de bat dau
+// Goi khi trigger ADC con tat (truoc adc_init()): UG ben duoi cung phat 1 xung TRGO
 void timer_init(uint32_t freq_hz)
 {
     // Bat clock TIM3 (bit 1: TIM3EN), di cung BOARD_TIM trong board.h
@@ -15,15 +17,18 @@ void timer_init(uint32_t freq_hz)
     BOARD_TIM->PSC = psc;
     BOARD_TIM->ARR = (ticks / (psc + 1)) - 1;
 
-    // Tao update event de nap PSC ngay (bit 0: UG), roi xoa co UIF no vua dat
-    BOARD_TIM->EGR = (1 << 0);
-    BOARD_TIM->SR = ~(1 << 0);
-
     // Phat TRGO moi lan timer tran: MMS = 010 (bit 6:4 cua CR2), dung de kich ADC
-    // Dat sau UG de update event o tren khong kich ADC som
     BOARD_TIM->CR2 = (2 << 4);
 
-    // Bat dau dem (bit 0: CEN)
+    // Tao update event de nap PSC ngay (bit 0: UG), roi xoa co UIF no vua dat
+    // UG phat TRGO o ca MMS = 000 lan 010, nen ADC chua duoc bat trigger luc nay
+    BOARD_TIM->EGR = (1 << 0);
+    BOARD_TIM->SR = ~(1 << 0);
+}
+
+// Bat dau dem (bit 0: CEN): tu day moi lan tran phat 1 TRGO
+void timer_start(void)
+{
     BOARD_TIM->CR1 = (1 << 0);
 }
 
@@ -37,4 +42,26 @@ void timer_wait_tick(void)
 
     // Xoa UIF bang cach ghi 0, cac co khac ghi 1 de giu nguyen
     BOARD_TIM->SR = ~(1 << 0);
+}
+
+// Cho ms mili giay bang SysTick, khong dung ngat (ham chan)
+// Chiem SysTick trong luc cho va tat no khi xong: khong dung chung voi RTOS
+void timer_delay_ms(uint32_t ms)
+{
+    // Dem lui tu LOAD ve 0 mat dung 1 ms (LOAD 24 bit: 71999 vua)
+    SysTick->LOAD = (BOARD_HCLK_HZ / 1000) - 1;
+    SysTick->VAL = 0;
+
+    // Nguon clock la HCLK (bit 2: CLKSOURCE), bat dem (bit 0: ENABLE), khong bat ngat
+    SysTick->CTRL = (1 << 2) | (1 << 0);
+
+    for (uint32_t i = 0; i < ms; i++)
+    {
+        // COUNTFLAG (bit 16) len 1 moi lan dem ve 0, tu xoa khi doc CTRL
+        while ((SysTick->CTRL & (1 << 16)) == 0)
+        {
+        }
+    }
+
+    SysTick->CTRL = 0;
 }
