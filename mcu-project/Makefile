@@ -12,7 +12,7 @@ CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
 FREERTOS_DIR := Lib/FreeRTOS-Kernel
 FATFS_DIR := Lib/STM32CubeF1/Middlewares/Third_Party/FatFs/src
 C_SOURCES := Src/main.c Startup/system_stm32f1xx.c Drivers/Src/uart.c Drivers/Src/adc.c Drivers/Src/timer.c \
-             Drivers/Src/sd_card.c Middlewares/FatFs/diskio.c $(FATFS_DIR)/ff.c
+             Drivers/Src/gpio.c Drivers/Src/sd_card.c Middlewares/FatFs/diskio.c $(FATFS_DIR)/ff.c
 FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
                     $(FREERTOS_DIR)/queue.c \
                     $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \

@@ -22,6 +22,9 @@
 // Clock cap cho TIM3: APB1 = 36 MHz, timer duoc nhan 2 vi APB1 chia 2 -> 72 MHz
 #define BOARD_TIM_CLK_HZ    72000000
 
+// Clock cap cho SysTick: HCLK = SYSCLK = 72 MHz (AHB khong chia)
+#define BOARD_HCLK_HZ       72000000
+
 // The microSD card uses SPI1 in SPI mode. Keep these pins reserved for storage.
 #define BOARD_SD_SPI           SPI1
 #define BOARD_SD_PORT          GPIOA
