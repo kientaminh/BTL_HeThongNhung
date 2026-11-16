@@ -8,7 +8,7 @@
 // Ma ket qua 0 la thanh cong (SD_CARD_OK, FR_OK), dung o buoc loi dau tien
 // Chi ghi qua FatFs (file TEST.TXT), khong ghi khoi tho va khong format the
 
-static const char test_text[] = "sd card ok na 123\r\n";
+static const char test_text[] = "alo 123 123\r\n";
 
 static FATFS fs;
 static FIL file;

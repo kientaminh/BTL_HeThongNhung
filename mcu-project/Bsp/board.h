@@ -29,5 +29,4 @@
 #define BOARD_SD_SCK_PIN       5
 #define BOARD_SD_MISO_PIN      6
 #define BOARD_SD_MOSI_PIN      7
-
 #endif /* BOARD_H */
