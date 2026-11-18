@@ -12,6 +12,12 @@ static volatile uint8_t pending_half = 0;
 static volatile bool block_in_use = false;
 // So lan DMA bat dau ghi de khi main chua xu ly xong khoi truoc
 static volatile uint32_t overrun_count = 0;
+static TaskHandle_t recorder_task = NULL;
+
+void adc_set_recorder_task(TaskHandle_t task)
+{
+    recorder_task = task;
+}
 
 // Khoi tao ADC doc 1 kenh (mic): moi lan TIM3 tran (TRGO) chuyen doi 1 mau,
 // DMA chep mau vao adc_buf
@@ -76,7 +82,9 @@ void adc_init(void)
     {
     }
 
-    // Cho phep ngat DMA1 kenh 1 o NVIC (ngat duy nhat cua he thong, de muc uu tien mac dinh)
+    // DMA goi FreeRTOS API trong ISR, nen uu tien khong duoc cao hon max syscall.
+    NVIC_SetPriority(DMA1_Channel1_IRQn,
+                     configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
     NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 }
 
@@ -96,6 +104,7 @@ static void block_done(uint8_t half)
 void DMA1_Channel1_IRQHandler(void)
 {
     uint32_t isr = DMA1->ISR;
+    BaseType_t higher_priority_woken = pdFALSE;
 
     // Xoa dung cac co vua doc duoc (bit 2: CHTIF1, bit 1: CTCIF1)
     DMA1->IFCR = isr & ((1 << 2) | (1 << 1));
@@ -111,6 +120,12 @@ void DMA1_Channel1_IRQHandler(void)
     {
         block_done(2);
     }
+
+    if (((isr & ((1 << 2) | (1 << 1))) != 0) && (recorder_task != NULL))
+    {
+        vTaskNotifyGiveFromISR(recorder_task, &higher_priority_woken);
+        portYIELD_FROM_ISR(higher_priority_woken);
+    }
 }
 
 // Cho DMA ghi xong 1 khoi, tra ve con tro toi ADC_BLOCK_SAMPLES mau 12 bit (ham chan)
@@ -120,26 +135,29 @@ const uint16_t *adc_wait_block(void)
 {
     uint8_t half;
 
+    taskENTER_CRITICAL();
     block_in_use = false;
+    taskEXIT_CRITICAL();
 
     for (;;)
     {
-        // Tat ngat khi kiem tra va lay khoi de ISR khong chen vao giua
-        __disable_irq();
+        taskENTER_CRITICAL();
         half = pending_half;
 
         if (half != 0)
         {
             pending_half = 0;
             block_in_use = true;
-            __enable_irq();
+        }
+        taskEXIT_CRITICAL();
+
+        if (half != 0)
+        {
             break;
         }
 
-        // Ngu den khi co ngat. WFI van thuc day khi ngat dang cho du PRIMASK = 1,
-        // ISR chay ngay sau __enable_irq(), nen khong ngu quen
-        __WFI();
-        __enable_irq();
+        // DMA ISR danh thuc task; neu thong bao den truoc, ham tra ve ngay.
+        (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     }
 
     return (half == 1) ? &adc_buf[0] : &adc_buf[ADC_BLOCK_SAMPLES];
@@ -158,6 +176,7 @@ void adc_reset_buffer(void)
 
     pending_half = 0;
     block_in_use = false;
+    (void)ulTaskNotifyTake(pdTRUE, 0);
 
     DMA1_Channel1->CCR |= (1 << 0);
 }

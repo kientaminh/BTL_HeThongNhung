@@ -19,15 +19,13 @@ C_SOURCES := Src/main.c Startup/system_stm32f1xx.c \
              Middlewares/FatFs/diskio.c $(FATFS_DIR)/ff.c
 FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
                     $(FREERTOS_DIR)/queue.c \
-                    $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
-                    $(FREERTOS_DIR)/portable/MemMang/heap_4.c
+                    $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c
 # Giu thu tu cua C_SOURCES (khong sort): Middlewares/FatFs phai dung truoc $(FATFS_DIR),
 # vi thu muc do cung co diskio.c mau cua ST
 vpath %.c $(dir $(C_SOURCES) $(FREERTOS_SOURCES))
 ASM_SOURCE := $(CMSIS_DIR)/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xb.s
-# FreeRTOS tam chua dua vao build: chua co FreeRTOSConfig.h.
-# Them lai: $(addprefix $(BUILD_DIR)/,$(notdir $(FREERTOS_SOURCES:.c=.o)))
 OBJECTS   := $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o))) \
+             $(addprefix $(BUILD_DIR)/,$(notdir $(FREERTOS_SOURCES:.c=.o))) \
              $(BUILD_DIR)/startup_stm32f103xb.o
 DEPS      := $(OBJECTS:.o=.d)
 

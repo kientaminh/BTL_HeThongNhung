@@ -9,6 +9,8 @@
 #include "gpio.h"
 #include "timer.h"
 #include "uart.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 // Chuong trinh ghi am bang nut: giu nut thi ghi, tha nut thi dung. TIM3 kich ADC 8 kHz,
 // DMA gom mau thanh khoi, loc FIR roi ghi vao REC.WAV (16 bit mono) tren the SD
@@ -140,7 +142,7 @@ static void wait_button(bool pressed)
 {
     do
     {
-        timer_delay_ms(REC_IDLE_POLL_MS);
+        vTaskDelay(pdMS_TO_TICKS(REC_IDLE_POLL_MS));
     } while (button_update(REC_IDLE_POLL_MS) != pressed);
 }
 
