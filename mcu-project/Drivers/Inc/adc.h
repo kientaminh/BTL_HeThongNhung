@@ -9,5 +9,7 @@
 
 void adc_init(void);
 const uint16_t *adc_wait_block(void);
+void adc_reset_buffer(void);
+uint32_t adc_get_overrun_count(void);
 
 #endif /* ADC_H */

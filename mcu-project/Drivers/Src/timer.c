@@ -32,6 +32,12 @@ void timer_start(void)
     BOARD_TIM->CR1 = (1 << 0);
 }
 
+// Dung dem (xoa bit 0: CEN): het TRGO nen ADC ngung lay mau. Bo dem giu nguyen gia tri
+void timer_stop(void)
+{
+    BOARD_TIM->CR1 &= ~(1 << 0);
+}
+
 // Cho den nhip ke tiep (ham chan)
 void timer_wait_tick(void)
 {

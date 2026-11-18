@@ -32,4 +32,12 @@
 #define BOARD_SD_SCK_PIN       5
 #define BOARD_SD_MISO_PIN      6
 #define BOARD_SD_MOSI_PIN      7
+
+// Nut ghi am: PA1 noi len 3.3 V, keo xuong ben trong (nhan = muc cao)
+#define BOARD_BTN_PORT      GPIOA
+#define BOARD_BTN_PIN       1
+
+// LED bao dang ghi: PC13, sang o muc thap
+#define BOARD_LED_PORT      GPIOC
+#define BOARD_LED_PIN       13
 #endif /* BOARD_H */
