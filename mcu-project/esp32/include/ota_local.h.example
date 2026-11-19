@@ -1,0 +1,9 @@
+#pragma once
+
+constexpr char OTA_WIFI_SSID[] = "your-wifi";
+constexpr char OTA_WIFI_PASSWORD[] = "your-wifi-password";
+constexpr char OTA_MANIFEST_URL[] = "https://updates.example.org/stm32/manifest.json";
+constexpr char OTA_ROOT_CA[] = R"PEM(-----BEGIN CERTIFICATE-----
+Paste the trusted root CA certificate for the HTTPS server here.
+-----END CERTIFICATE-----
+)PEM";

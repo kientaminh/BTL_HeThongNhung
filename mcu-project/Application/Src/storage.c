@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "storage.h"
+#include "esp_link.h"
 #include "ff.h"
 #include "recorder.h"
 #include "uart.h"
@@ -12,7 +13,7 @@
 // Nhan lenh qua 1 hang doi va xu ly dung thu tu gui:
 //   START: mount neu chua, mo REC.WAV (ghi de), ghi header tam; tra ket qua open cho record
 //   DATA:  ghi 1 bo dem PCM roi tra bo dem ve pool
-//   STOP:  sua header theo so mau da ghi, dong file, in thong ke
+//   STOP:  sua header theo so mau da ghi, dong file, gui phan PCM sang ESP (task comm), in thong ke
 // Uu tien thap hon record: luc driver SD cho the ban, record van chiem CPU de lay khoi DMA
 // Phan phat lai sau nay them lenh doc vao cung hang doi nay
 
@@ -26,6 +27,17 @@
 // Tach so thanh cac byte little-endian de dat vao bang khoi tao
 #define LE16(v) (uint8_t)((v) & 0xFF), (uint8_t)(((v) >> 8) & 0xFF)
 #define LE32(v) LE16(v), LE16((v) >> 16)
+
+// Header WAV PCM; phan PCM bat dau ngay sau
+#define WAV_HEADER_BYTES 44
+
+// Gui sang ESP: storage doc file vao bo dem pool roi giao nguyen bo dem cho comm
+#if (STORAGE_BUFFER_SAMPLES != ESP_LINK_FRAME_SAMPLES)
+#error "Bo dem storage phai dung bang 1 khung ESP"
+#endif
+#if (STORAGE_POOL_BUFFERS > ESP_LINK_MAX_IN_FLIGHT)
+#error "Pool storage lon hon so khung esp_link nhan duoc cung luc"
+#endif
 
 typedef enum
 {
@@ -115,7 +127,7 @@ static bool report(const char *p_name, uint32_t code)
 // nen ghi data_bytes = 0, khi dung ghi quay lai dau file ghi lai voi do dai that
 static FRESULT write_header(uint32_t data_bytes)
 {
-    const uint8_t header[44] = {
+    const uint8_t header[WAV_HEADER_BYTES] = {
         'R', 'I', 'F', 'F', LE32(36 + data_bytes), 'W', 'A', 'V', 'E',
         'f', 'm', 't', ' ', LE32(16),      // do dai khoi fmt
         LE16(1),                           // dinh dang 1 = PCM
@@ -201,6 +213,75 @@ static void handle_data(int16_t *p_pcm)
     (void)xQueueSend(free_queue, &p_pcm, portMAX_DELAY);
 }
 
+// Doc phan PCM cua REC.WAV va giao tung khung cho task comm gui sang ESP. Ham chan: comm gui
+// dung nhip phat (128 ms/khung) nen mat gan bang thoi gian ghi; lenh START den luc nay phai cho.
+// Muon cac bo dem pool lam bo dem doc: luc nay khong ghi am nen ca pool dang trong
+static void send_to_esp(uint32_t frames)
+{
+    uint32_t submitted = 0;
+    uint32_t in_flight = 0;
+    FRESULT res = f_open(&file, "REC.WAV", FA_READ);
+    bool opened = (res == FR_OK);
+
+    if (res == FR_OK)
+    {
+        res = f_lseek(&file, WAV_HEADER_BYTES);
+    }
+
+    while ((res == FR_OK) && (submitted < frames))
+    {
+        int16_t *p_pcm = NULL;
+        UINT done = 0;
+
+        // Con bo dem trong thi lay tu pool, het thi cho comm gui xong 1 khung roi dung lai
+        if (in_flight < STORAGE_POOL_BUFFERS)
+        {
+            (void)xQueueReceive(free_queue, &p_pcm, portMAX_DELAY);
+        }
+        else
+        {
+            p_pcm = esp_link_take_sent();
+            in_flight--;
+        }
+
+        res = f_read(&file, p_pcm, STORAGE_BUFFER_SAMPLES * sizeof(int16_t), &done);
+
+        // File ngan hon so mau da ghi: coi la loi, khong gui khung thieu
+        if ((res == FR_OK) && (done != (STORAGE_BUFFER_SAMPLES * sizeof(int16_t))))
+        {
+            res = FR_INT_ERR;
+        }
+
+        if (res == FR_OK)
+        {
+            esp_link_submit(p_pcm);
+            in_flight++;
+            submitted++;
+        }
+        else
+        {
+            (void)xQueueSend(free_queue, &p_pcm, 0);
+        }
+    }
+
+    // Lay lai moi bo dem truoc khi xu ly lenh ke tiep: START dung pool de ghi am
+    while (in_flight > 0)
+    {
+        int16_t *p_pcm = esp_link_take_sent();
+
+        (void)xQueueSend(free_queue, &p_pcm, 0);
+        in_flight--;
+    }
+
+    (void)report("esp_frames", submitted);
+    (void)report("esp", res);
+
+    if (opened)
+    {
+        (void)f_close(&file);
+    }
+}
+
 static void handle_stop(const storage_stats_t *p_stats)
 {
     (void)report("write", write_res);
@@ -217,7 +298,17 @@ static void handle_stop(const storage_stats_t *p_stats)
     }
 
     (void)report("header", header_res);
-    (void)report("close", f_close(&file));
+
+    FRESULT close_res = f_close(&file);
+
+    (void)report("close", close_res);
+
+    // Chi gui khi file da dong tron ven; written luon la boi so cua 1 khung
+    if ((close_res == FR_OK) && (written > 0))
+    {
+        send_to_esp(written / ESP_LINK_FRAME_SAMPLES);
+    }
+
     print_str("stop\r\n");
 
     // Word stack con trong it nhat ke tu khi chay: dung de chot kich thuoc stack 2 task

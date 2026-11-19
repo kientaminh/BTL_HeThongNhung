@@ -28,13 +28,22 @@
 static StaticTask_t recorder_tcb;
 static StackType_t recorder_stack[RECORDER_STACK_WORDS];
 
-// Cho den khi nut (da chong doi) o trang thai pressed
+// Cho den khi nut (da chong doi) o trang thai pressed. Chan on dinh thi ngu han toi ngat
+// EXTI cua nut; chi doc nut moi 5 ms trong luc chong doi sau mot canh (~20-25 ms)
+// Thong bao den truoc khi ngu van duoc giu lai nen khong lo mat canh
 static void wait_button(bool pressed)
 {
-    do
+    while (button_update(REC_IDLE_POLL_MS) != pressed)
     {
-        vTaskDelay(pdMS_TO_TICKS(REC_IDLE_POLL_MS));
-    } while (button_update(REC_IDLE_POLL_MS) != pressed);
+        if (button_changing())
+        {
+            vTaskDelay(pdMS_TO_TICKS(REC_IDLE_POLL_MS));
+        }
+        else
+        {
+            (void)ulTaskNotifyTakeIndexed(BUTTON_NOTIFY_INDEX, pdTRUE, portMAX_DELAY);
+        }
+    }
 }
 
 // Doi 1 khoi ADC sang PCM 16 bit co dau vao p_pcm roi loc thong thap 1 kHz tai cho
@@ -102,8 +111,10 @@ static void recorder_task(void *p_arg)
 {
     (void)p_arg;
 
-    // DMA ISR danh thuc dung task nay khi 1 khoi day
+    // DMA ISR danh thuc dung task nay khi 1 khoi day (thong bao chi so 0),
+    // ngat nut danh thuc khi chan PA1 doi muc (chi so BUTTON_NOTIFY_INDEX)
     adc_set_recorder_task(xTaskGetCurrentTaskHandle());
+    button_set_notify_task(xTaskGetCurrentTaskHandle());
 
     for (;;)
     {

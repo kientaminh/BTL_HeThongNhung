@@ -14,7 +14,12 @@
 #define configMINIMAL_STACK_SIZE             128
 #define configMAX_TASK_NAME_LEN              12
 #define configUSE_16_BIT_TICKS                0
-#define configUSE_IDLE_HOOK                   0
+#define configUSE_IDLE_HOOK                   1    // vApplicationIdleHook() trong main.c: __WFI()
+// Khi khong task nao can chay >= 2 tick: tam dung SysTick va ngu mot mach toi ngat ke tiep
+// (port.c vPortSuppressTicksAndSleep). SysTick 24 bit o 72 MHz: moi lan ngu toi da ~233 ms
+#define configUSE_TICKLESS_IDLE               1
+// Chi so 0: ngat DMA ADC -> record; chi so 1: ngat nut EXTI1 -> record (BUTTON_NOTIFY_INDEX)
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES 2
 #define configUSE_TICK_HOOK                   0
 #define configUSE_TIMERS                      0
 #define configUSE_MUTEXES                     0
