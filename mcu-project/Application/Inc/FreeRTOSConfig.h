@@ -2,16 +2,16 @@
 #define FREERTOS_CONFIG_H
 
 // STM32F103C8: HCLK 72 MHz, NVIC co 4 bit uu tien.
-#define configCPU_CLOCK_HZ                    72000000UL
-#define configTICK_RATE_HZ                    1000U
+#define configCPU_CLOCK_HZ                    72000000
+#define configTICK_RATE_HZ                    1000
 #define configPRIO_BITS                       4
-#define configKERNEL_INTERRUPT_PRIORITY      (15U << 4)
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY (5U << 4)
-#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5U
+#define configKERNEL_INTERRUPT_PRIORITY      (15 << 4)
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY (5 << 4)
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5
 
 #define configUSE_PREEMPTION                  1
 #define configMAX_PRIORITIES                  3
-#define configMINIMAL_STACK_SIZE             128U
+#define configMINIMAL_STACK_SIZE             128
 #define configMAX_TASK_NAME_LEN              12
 #define configUSE_16_BIT_TICKS                0
 #define configUSE_IDLE_HOOK                   0
@@ -21,16 +21,16 @@
 #define configCHECK_FOR_STACK_OVERFLOW        2
 #define configCHECK_HANDLER_INSTALLATION      1
 
-#define configASSERT(condition)                                      \
-    do                                                               \
-    {                                                                \
-        if (!(condition))                                             \
-        {                                                            \
-            __asm volatile ("cpsid i");                              \
-            for (;;)                                                 \
-            {                                                        \
-            }                                                        \
-        }                                                            \
+// Loi khong phuc hoi: tat ngat, nhap nhay LED, treo (dinh nghia trong Src/main.c)
+void app_fatal(void);
+
+#define configASSERT(condition) \
+    do                          \
+    {                           \
+        if (!(condition))       \
+        {                       \
+            app_fatal();        \
+        }                       \
     } while (0)
 
 // Khong can heap: TCB va stack cua recorder/idle duoc cap tinh.
@@ -40,6 +40,8 @@
 
 #define INCLUDE_vTaskDelay                   1
 #define INCLUDE_xTaskGetCurrentTaskHandle    1
+// Do stack con trong cua task recorder (in "stack_free" sau moi lan ghi)
+#define INCLUDE_uxTaskGetStackHighWaterMark  1
 
 // Vector trong startup_stm32f103xb.s dung cac ten handler CMSIS.
 #define vPortSVCHandler                      SVC_Handler

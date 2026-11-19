@@ -3,13 +3,23 @@
 
 #include "stm32f1xx.h"
 
-// USART1 mac dinh (khong remap): TX = PA9, RX = PA10
-#define BOARD_USART         USART1
-#define BOARD_USART_PORT    GPIOA
-#define BOARD_USART_TX_PIN  9
-#define BOARD_USART_RX_PIN  10
-// Clock cap cho USART1: APB2 = SYSCLK = 72 MHz 
-#define BOARD_USART_PCLK_HZ 72000000
+// Log debug len may tinh: USART2 mac dinh (khong remap): TX = PA2, RX = PA3
+#define BOARD_LOG_USART     USART2
+#define BOARD_LOG_PORT      GPIOA
+#define BOARD_LOG_TX_PIN    2
+#define BOARD_LOG_RX_PIN    3
+// Clock cap cho USART2: APB1 = 36 MHz
+#define BOARD_LOG_PCLK_HZ   36000000
+
+// ESP32-S3: USART1 mac dinh (khong remap): TX = PA9, RX = PA10
+// Cung la cong bootloader ROM: ESP nap firmware qua day (ESP dieu khien BOOT0, NRST)
+// Khong dat log hay du lieu khac len 2 chan nay
+#define BOARD_ESP_USART     USART1
+#define BOARD_ESP_PORT      GPIOA
+#define BOARD_ESP_TX_PIN    9
+#define BOARD_ESP_RX_PIN    10
+// Clock cap cho USART1: APB2 = SYSCLK = 72 MHz
+#define BOARD_ESP_PCLK_HZ   72000000
 
 // Mic MAX9814: chan OUT noi vao PA0 = ADC1 kenh 0 (ADC12_IN0)
 #define BOARD_ADC           ADC1

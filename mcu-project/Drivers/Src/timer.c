@@ -49,25 +49,3 @@ void timer_wait_tick(void)
     // Xoa UIF bang cach ghi 0, cac co khac ghi 1 de giu nguyen
     BOARD_TIM->SR = ~(1 << 0);
 }
-
-// Cho ms mili giay bang SysTick, khong dung ngat (ham chan)
-// Chiem SysTick trong luc cho va tat no khi xong: khong dung chung voi RTOS
-void timer_delay_ms(uint32_t ms)
-{
-    // Dem lui tu LOAD ve 0 mat dung 1 ms (LOAD 24 bit: 71999 vua)
-    SysTick->LOAD = (BOARD_HCLK_HZ / 1000) - 1;
-    SysTick->VAL = 0;
-
-    // Nguon clock la HCLK (bit 2: CLKSOURCE), bat dem (bit 0: ENABLE), khong bat ngat
-    SysTick->CTRL = (1 << 2) | (1 << 0);
-
-    for (uint32_t i = 0; i < ms; i++)
-    {
-        // COUNTFLAG (bit 16) len 1 moi lan dem ve 0, tu xoa khi doc CTRL
-        while ((SysTick->CTRL & (1 << 16)) == 0)
-        {
-        }
-    }
-
-    SysTick->CTRL = 0;
-}

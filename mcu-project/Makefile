@@ -12,7 +12,7 @@ CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
 FREERTOS_DIR := Lib/FreeRTOS-Kernel
 FATFS_DIR := Lib/STM32CubeF1/Middlewares/Third_Party/FatFs/src
 C_SOURCES := Src/main.c Startup/system_stm32f1xx.c \
-             Application/Src/recorder.c \
+             Application/Src/recorder.c Application/Src/storage.c \
              Middlewares/Button/button.c Middlewares/Dsp/fir.c \
              Drivers/Src/uart.c Drivers/Src/adc.c Drivers/Src/timer.c \
              Drivers/Src/gpio.c Drivers/Src/sd_card.c \
