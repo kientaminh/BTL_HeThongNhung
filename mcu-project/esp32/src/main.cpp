@@ -1,8 +1,13 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 #include <driver/i2s.h>
 
 #include "audio_frame.h"
 #include "config.h"
+#include "local_upload.h"
+#include "ota.h"
+#include "status_led.h"
+#include "stm32_programmer.h"
 
 static constexpr i2s_port_t audio_port = I2S_NUM_0;
 static constexpr unsigned long frame_gap_ms = 100;
@@ -39,13 +44,27 @@ void setup()
     Serial.begin(115200);
     audio_init();
 
+    if (!status_led_init())
+    {
+        Serial.println("RGB status task did not start");
+    }
+
     // One audio block is 2048 bytes; UART can keep receiving while I2S drains DMA.
     Serial1.setRxBufferSize(8192);
     Serial1.begin(UART_BAUD, SERIAL_8N1, UART_RX_GPIO, UART_TX_GPIO);
+    const bool storage_ready = LittleFS.begin(false);
+    ota_init(storage_ready);
+    local_upload_init(storage_ready);
 }
 
 void loop()
 {
+    if (stm32_program_run_pending())
+    {
+        audio_frame.reset();
+        return;
+    }
+
     if ((millis() - last_byte_ms) >= frame_gap_ms)
     {
         audio_frame.reset();
@@ -65,6 +84,9 @@ void loop()
     {
         return;
     }
+
+    status_led_audio_received();
+    stm32_program_note_audio();    // chan nap STM32 khi loa con dang phat
 
     // Duplicate mono so the amp plays the same signal with either channel selected.
     for (size_t i = 0; i < AudioFrame::sample_count; ++i)

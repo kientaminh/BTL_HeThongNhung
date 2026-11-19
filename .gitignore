@@ -1,0 +1,13 @@
+# Local tools and editor settings
+/.agents/
+/.codex/
+/.aws/
+/.vscode/
+
+# Generated diagrams and local notes
+/.archify/
+/image.png
+
+# Python cache
+__pycache__/
+*.pyc
