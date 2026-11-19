@@ -1,0 +1,89 @@
+PROJECT := stm32
+
+CC      := arm-none-eabi-gcc
+OBJCOPY := arm-none-eabi-objcopy
+SIZE    := arm-none-eabi-size
+
+BUILD_DIR := Build
+BIN_DIR   := Bin
+LINKER    := Linker/stm32f103c8.ld
+
+CMSIS_DIR := Lib/STM32CubeF1/Drivers/CMSIS
+FREERTOS_DIR := Lib/FreeRTOS-Kernel
+FATFS_DIR := Lib/STM32CubeF1/Middlewares/Third_Party/FatFs/src
+C_SOURCES := Src/main.c Startup/system_stm32f1xx.c \
+             Application/Src/recorder.c Application/Src/storage.c Application/Src/esp_link.c \
+             Middlewares/Button/button.c Middlewares/Dsp/fir.c Middlewares/Crc/crc16.c \
+             Drivers/Src/uart.c Drivers/Src/adc.c Drivers/Src/timer.c \
+             Drivers/Src/gpio.c Drivers/Src/sd_card.c \
+             Middlewares/FatFs/diskio.c $(FATFS_DIR)/ff.c
+FREERTOS_SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
+                    $(FREERTOS_DIR)/queue.c \
+                    $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c
+# Giu thu tu cua C_SOURCES (khong sort): Middlewares/FatFs phai dung truoc $(FATFS_DIR),
+# vi thu muc do cung co diskio.c mau cua ST
+vpath %.c $(dir $(C_SOURCES) $(FREERTOS_SOURCES))
+ASM_SOURCE := $(CMSIS_DIR)/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xb.s
+OBJECTS   := $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o))) \
+             $(addprefix $(BUILD_DIR)/,$(notdir $(FREERTOS_SOURCES:.c=.o))) \
+             $(BUILD_DIR)/startup_stm32f103xb.o
+DEPS      := $(OBJECTS:.o=.d)
+
+CPUFLAGS := -mcpu=cortex-m3 -mthumb
+INCLUDES  := -ISrc -IBsp -IApplication/Inc \
+             -IMiddlewares/Button -IMiddlewares/Dsp -IMiddlewares/Crc \
+             -IDrivers/Inc -IMiddlewares/FatFs -I$(FATFS_DIR) -I$(CMSIS_DIR)/Include \
+             -I$(CMSIS_DIR)/Device/ST/STM32F1xx/Include \
+             -I$(FREERTOS_DIR)/include \
+             -I$(FREERTOS_DIR)/portable/GCC/ARM_CM3
+CFLAGS   := $(CPUFLAGS) -DSTM32F103xB $(INCLUDES) \
+            -std=gnu11 -O2 -g3 -Wall -Wextra -ffreestanding \
+            -ffunction-sections -fdata-sections -MMD -MP
+LDFLAGS  := $(CPUFLAGS) -T$(LINKER) -nostdlib \
+            -Wl,--gc-sections -Wl,-Map=$(BIN_DIR)/$(PROJECT).map
+
+ELF := $(BIN_DIR)/$(PROJECT).elf
+BIN := $(BIN_DIR)/$(PROJECT).bin
+HEX := $(BIN_DIR)/$(PROJECT).hex
+
+.PHONY: all flash flash-stlink clean
+
+all: $(ELF) $(BIN) $(HEX)
+	$(SIZE) $(ELF)
+
+$(ELF): $(OBJECTS) $(LINKER) | $(BIN_DIR)
+	$(CC) $(OBJECTS) $(LDFLAGS) -lc -lgcc -o $@
+
+$(BIN): $(ELF)
+	$(OBJCOPY) -O binary $< $@
+
+$(HEX): $(ELF)
+	$(OBJCOPY) -O ihex $< $@
+
+$(BUILD_DIR)/%.o: Src/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/startup_stm32f103xb.o: $(ASM_SOURCE) | $(BUILD_DIR)
+	$(CC) $(CPUFLAGS) -g3 -c $< -o $@
+
+$(BUILD_DIR) $(BIN_DIR):
+	mkdir -p $@
+
+# Nap bang OpenOCD va ST-Link.
+flash: $(ELF)
+	openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg \
+		-c "program $(ELF) verify reset exit"
+
+# Cach khac khi da cai stlink-tools.
+flash-stlink: $(BIN)
+	st-flash --reset write $(BIN) 0x08000000
+
+clean:
+	rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/*.d
+	rm -f $(BIN_DIR)/$(PROJECT).elf $(BIN_DIR)/$(PROJECT).bin \
+	      $(BIN_DIR)/$(PROJECT).hex $(BIN_DIR)/$(PROJECT).map
+
+-include $(DEPS)
